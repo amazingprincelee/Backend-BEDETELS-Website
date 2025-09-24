@@ -4,6 +4,7 @@ import Teacher from "../models/teachers.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { sendUserCredentials } from "../utils/node-mailer.js";
+import { generatePassword } from '../utils/autoGeneratePassword.js'
 
 const saltRound = 10
 const JWT_SECRET =  process.env.JWT_SECRET;
@@ -23,7 +24,7 @@ export const login = async (req, res)=> {
        
         
 
-        const user = await User.findOne({$or: [{phone: username}, {email: username}]});
+        const user = await User.findOne({username: username});
         
 
         if(!user){
@@ -53,31 +54,38 @@ export const register = async (req, res) => {
 
     try {
 
-        const {fullname, phone, address, email, password, role, gender, 
+        const {fullname, username, phone, address, email, password, role, gender, 
                // Teacher-specific fields
                salary, designation, subjects, status, bankName, bankAccount, accountName} = req.body;
 
-        const user = await User.findOne({
-            $or: [
-                {email: email},
-                {phone: phone}
-            ]
-        })
+        // Check if username already exists
+        const existingUser = await User.findOne({username: username});
+        
+        // Also check if email or phone already exist (if provided)
+        const duplicateCheck = [];
+        if (email) duplicateCheck.push({email: email});
+        if (phone) duplicateCheck.push({phone: phone});
+        
+        const user = duplicateCheck.length > 0 ? await User.findOne({$or: duplicateCheck}) : null;
+
+        if(existingUser){
+           return res.status(400).json({message: "Username already exists"})
+        }
 
         if(user){
-           return res.status(400).json({message: "Already Existing user"})
+           return res.status(400).json({message: "Email or phone number already exists"})
         };
 
-        let generatedPassword = null;
+        let generatedPassword = password;
         let emailSent = false;
 
-        // Store plain password for teachers and parents to send via email
+        // Auto-generate password for teachers and parents
         if (role === "parent" || role === "teacher") {
-            generatedPassword = password;
+            generatedPassword = generatePassword();
             
             try {
                 const userData = { fullname, phone, email, address, gender, role };
-                await sendUserCredentials(userData, password);
+                await sendUserCredentials(userData, generatedPassword);
                 emailSent = true;
                 
                 console.log(`Credentials email sent to ${role} ${fullname}: Success`);
@@ -86,21 +94,27 @@ export const register = async (req, res) => {
                 emailSent = false;
                 // Continue with registration even if email fails
             }
+        } else if (!password) {
+            // For admin users, password is required
+            return res.status(400).json({message: "Password is required for admin users"});
         }
 
-        const hashedPassword = await bcrypt.hash(password, saltRound);
+        const hashedPassword = await bcrypt.hash(generatedPassword, saltRound);
 
         // Prepare user data
         const userData = {
             fullname: fullname,
-            phone: phone,
-            email: email, 
+            username: username,
             address: address,
             gender: gender,
             password: hashedPassword,
             generatedParentPassword: generatedPassword, // Store for both teachers and parents
             role: role
         };
+
+        // Add optional fields if provided
+        if (phone) userData.phone = phone;
+        if (email) userData.email = email;
 
         // Add teacher-specific fields if role is teacher
         if (role === 'teacher') {
@@ -167,9 +181,9 @@ export const register = async (req, res) => {
 
         // Add role-specific information to response for teachers and parents
         if (role === 'parent' || role === 'teacher') {
-            response.credentialsInfo = {
-                plainPassword: generatedPassword,
-                welcomeEmailSent: emailSent
+            response.parentInfo = {
+                temporaryPassword: generatedPassword,
+                emailSent: emailSent
             };
             response.message = emailSent 
                 ? `${role.charAt(0).toUpperCase() + role.slice(1)} successfully registered and welcome email sent with login credentials`

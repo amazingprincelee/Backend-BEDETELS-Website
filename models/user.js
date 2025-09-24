@@ -4,8 +4,9 @@ import mongoose from "mongoose";
 
 const usersSchema  = new mongoose.Schema({
     fullname: {type: String, required: true},
-    email: {type: String, unique: true},
-    phone: {type: String, unique: true, required: true},
+    username: {type: String, unique: true, required: true}, 
+    email: {type: String, unique: true, sparse: true}, 
+    phone: {type: String, unique: true, sparse: true}, 
     password: {type: String, required: true},
     generatedParentPassword: {type: String},
     gender: { type: String, enum: ["Male", "Female", "male", "female"]},

@@ -30,7 +30,7 @@ export const isSuperAdmin = async (req, res, next) => {
         const user = req.user
 
         if(user.role !== "superadmin"){
-            res.status(401).json({message: "Unauthorised"})
+          return  res.status(401).json({message: "Unauthorised"})
         }
 
         next();
