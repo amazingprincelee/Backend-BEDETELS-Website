@@ -85,10 +85,18 @@ export const register = async (req, res) => {
             
             try {
                 const userData = { fullname, phone, email, address, gender, role };
-                await sendUserCredentials(userData, generatedPassword);
-                emailSent = true;
+                const emailResult = await sendUserCredentials(userData, generatedPassword);
                 
-                console.log(`Credentials email sent to ${role} ${fullname}: Success`);
+                if (emailResult.skipped) {
+                    console.log(`Email sending skipped for ${role} ${fullname} - mailer not ready`);
+                    emailSent = false;
+                } else if (emailResult.success) {
+                    console.log(`Credentials email sent to ${role} ${fullname}: Success`);
+                    emailSent = true;
+                } else {
+                    console.log(`Failed to send email to ${role} ${fullname}:`, emailResult.error?.message);
+                    emailSent = false;
+                }
             } catch (emailError) {
                 console.error(`Failed to send welcome email to ${role}:`, emailError);
                 emailSent = false;
