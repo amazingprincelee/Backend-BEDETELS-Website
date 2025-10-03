@@ -7,8 +7,8 @@ export const addTeacher = async (req, res) => {
   try {
     const {
       fullname,
-      email,
-      password,
+      username,
+      email,  // Keep this - it's used if username is not an email
       phone,
       gender,
       address,
@@ -19,13 +19,14 @@ export const addTeacher = async (req, res) => {
       bankName,
       bankAccount,
       accountName
+      // password is REMOVED - it's auto-generated in register controller
     } = req.body;
 
     // Prepare the request body for the auth controller register function
     const teacherData = {
       fullname,
+      username,
       email,
-      password,
       phone,
       gender,
       address,
@@ -37,6 +38,7 @@ export const addTeacher = async (req, res) => {
       bankName,
       bankAccount,
       accountName
+      // NO password field - register controller will auto-generate it
     };
 
     // Create a mock request object for the auth controller
@@ -53,7 +55,7 @@ export const addTeacher = async (req, res) => {
             res.status(201).json({
               message: "Teacher created successfully and login credentials sent via email",
               teacher: data.newUser,
-              credentialsInfo: data.credentialsInfo
+              credentials: data.parentInfo  // This contains temporaryPassword and emailSent
             });
           } else {
             // Error occurred

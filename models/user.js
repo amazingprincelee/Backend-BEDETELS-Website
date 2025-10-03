@@ -9,6 +9,7 @@ const usersSchema  = new mongoose.Schema({
     phone: {type: String, unique: true, sparse: true}, 
     password: {type: String, required: true},
     generatedParentPassword: {type: String},
+    updatedPassword: {type: Boolean, default: false},
     gender: { type: String, enum: ["Male", "Female", "male", "female"]},
     address: String,
     profilePhoto: String,

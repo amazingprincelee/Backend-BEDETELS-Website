@@ -65,7 +65,7 @@ export const getParentsWithChildren = async (req, res) => {
     const parents = await User.find({ role: "parent" }).lean();
 
     if (!parents || parents.length === 0) {
-      return res.status(404).json({ message: "No parents found" });
+      return res.status(201).json({ message: "No parents found" });
     }
 
     // Attach children to each parent
