@@ -51,6 +51,9 @@ export const changePassword = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     dbUser.password = await bcrypt.hash(newPassword, salt);
 
+    // Set updatedPassword to true when teacher changes their password
+    dbUser.updatedPassword = true;
+
     await dbUser.save();
 
     res.status(200).json({ message: "Password updated successfully" });
